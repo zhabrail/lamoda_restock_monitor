@@ -76,7 +76,7 @@ namespace lamoda_restock_monitor
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Error reading SKUs from the file: " + ex.Message);
+                    Console.WriteLine("[" + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + "." + DateTime.Now.Millisecond + "] Error reading SKUs from the file: " + ex.Message);
                 }
 
                 Thread.Sleep(60000); // ОБновление пидов раз в минуту
@@ -114,14 +114,14 @@ namespace lamoda_restock_monitor
                     }
                     else
                     {
-                        Console.WriteLine($"API request failed with status code: {response.StatusCode}");
+                        Console.WriteLine("[" + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + "." + DateTime.Now.Millisecond + "]" + $" API request failed with status code: {response.StatusCode}");
                         return null;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred while making the API request: " + ex.Message);
+                Console.WriteLine("[" + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + "." + DateTime.Now.Millisecond + "] An error occurred while making the API request: " + ex.Message);
                 return null;
             }
         }
@@ -156,54 +156,61 @@ namespace lamoda_restock_monitor
 
         private static void CompareResponses(LamodaApiResponse oldResponse, LamodaApiResponse newResponse)
         {
-            foreach (Product newProduct in newResponse.Products)
+            try
             {
-                Product oldProduct = oldResponse.Products.Find(p => p.Sku == newProduct.Sku);
-
-                if (oldProduct == null)
+                foreach (Product newProduct in newResponse.Products)
                 {
-                    string sizes = "";
-                    foreach (Size size in newProduct.Sizes)
+                    Product oldProduct = oldResponse.Products.Find(p => p.Sku == newProduct.Sku);
+
+                    if (oldProduct == null)
                     {
-                        sizes += $"{size.Title} [{size.Stock_Quantity}]\n";
-                    }
-                    sizes = sizes.TrimEnd('\n', '\0');
-
-                    if (newProduct.Price == null)
-                    {
-                        newProduct.Price = "N/A";
-                    }
-
-                    if (sizes == "")
-                    {
-                        sizes = "N/A";
-                    }
-
-                    sendWebhook("New SKU added", webhook, $"{newProduct.Thumbnail}", $"{newProduct.Brand.Title} {newProduct.Model_Title}", $"{newProduct.Sku}", sizes, $"{newProduct.Price}");
-                }
-
-                if (oldProduct != null)
-                {
-                    foreach (Size newSize in newProduct.Sizes)
-                    {
-                        Size oldSize = oldProduct.Sizes.Find(s => s.Title == newSize.Title);
-
-                        if (oldSize != null && newSize.Stock_Quantity > 0 && oldSize.Stock_Quantity < 1)
+                        string sizes = "";
+                        foreach (Size size in newProduct.Sizes)
                         {
-                            string sizes = "";
-                            foreach (Size size in newProduct.Sizes)
-                            {
-                                if (size.Stock_Quantity > 0)
-                                {
-                                    sizes += $"{size.Title} [{size.Stock_Quantity}]\n";
-                                }
-                            }
-                            sizes = sizes.TrimEnd('\n', '\0');
+                            sizes += $"{size.Title} [{size.Stock_Quantity}]\n";
+                        }
+                        sizes = sizes.TrimEnd('\n', '\0');
 
-                            sendWebhook("Restock", webhook, $"{newProduct.Thumbnail}", $"{newProduct.Brand.Title} {newProduct.Model_Title}", $"{newProduct.Sku}", sizes, $"{newProduct.Price} ₸");
+                        if (newProduct.Price == null)
+                        {
+                            newProduct.Price = "N/A";
+                        }
+
+                        if (sizes == "")
+                        {
+                            sizes = "N/A";
+                        }
+
+                        sendWebhook("New SKU added", webhook, $"{newProduct.Thumbnail}", $"{newProduct.Brand.Title} {newProduct.Model_Title}", $"{newProduct.Sku}", sizes, $"{newProduct.Price}");
+                    }
+
+                    if (oldProduct != null)
+                    {
+                        foreach (Size newSize in newProduct.Sizes)
+                        {
+                            Size oldSize = oldProduct.Sizes.Find(s => s.Title == newSize.Title);
+
+                            if (oldSize != null && newSize.Stock_Quantity > 0 && oldSize.Stock_Quantity < 1)
+                            {
+                                string sizes = "";
+                                foreach (Size size in newProduct.Sizes)
+                                {
+                                    if (size.Stock_Quantity > 0)
+                                    {
+                                        sizes += $"{size.Title} [{size.Stock_Quantity}]\n";
+                                    }
+                                }
+                                sizes = sizes.TrimEnd('\n', '\0');
+
+                                sendWebhook("Restock", webhook, $"{newProduct.Thumbnail}", $"{newProduct.Brand.Title} {newProduct.Model_Title}", $"{newProduct.Sku}", sizes, $"{newProduct.Price} ₸");
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[" + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + "." + DateTime.Now.Millisecond + "] An error occurred while comparing response: " + ex.Message);
             }
         }
 
@@ -263,7 +270,7 @@ namespace lamoda_restock_monitor
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occurred while sending webhook: " + ex.Message);
+                Console.WriteLine("[" + DateTime.Now.Hour + ":" + DateTime.Now.Minute + ":" + DateTime.Now.Second + "." + DateTime.Now.Millisecond + "] An error occurred while sending webhook: " + ex.Message);
             }
         }
     }
